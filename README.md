@@ -2,4 +2,4 @@
 Телеграмм бот отправляющий подробную сводку погоды | Python | Aiogram
 
 
-<img src="Ref/start.png" width="300" height="600">
+<img src="Ref/start.png" width="300" height="500">
