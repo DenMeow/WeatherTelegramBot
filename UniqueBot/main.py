@@ -6,12 +6,14 @@ from aiogram import Bot, Dispatcher, executor, types
 bot = Bot(token='6615733860:AAHKJZNX9U6IbZaPsk24RZ2_YU_U1VSMxDo')
 dp = Dispatcher(bot)
 
-
 @dp.message_handler(commands=["start"])
 async def start_command(message: types.Message):
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    buttons = ["Включить оповещение о погоде", "Выключить оповещение о погоде"]
+    keyboard.add(*buttons)
     photo = open('hi.jpg', 'rb')
     await bot.send_photo(message.chat.id, photo)
-    await message.reply(f"Привет, {message.from_user.first_name} \nНапиши мне название города и я пришлю сводку погоды🙂")
+    await message.answer(f"Привет, {message.from_user.first_name} \nНапиши мне название города и я пришлю сводку погоды🙂", reply_markup=keyboard)
 
 @dp.message_handler()
 async def get_weather(message: types.Message):
