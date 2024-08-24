@@ -3,9 +3,14 @@ import requests
 import math
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.dispatcher.filters import Text
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
 
 bot = Bot(token='6615733860:AAHKJZNX9U6IbZaPsk24RZ2_YU_U1VSMxDo')
 dp = Dispatcher(bot)
+scheduler = AsyncIOScheduler()
+user_notifications = {}
+
 
 @dp.message_handler(commands=["start"])
 async def start_command(message: types.Message):
@@ -18,7 +23,8 @@ async def start_command(message: types.Message):
 
 @dp.message_handler(Text(equals="Включить оповещение о погоде"))
 async def OnNotification(message: types.Message):
-
+    await message.reply("Введите время в формате HH:MM и название города (например, 14:30 Москва):")
+    user_notifications[message.chat.id] = None  # Инициализируем для этого пользователя
 
 @dp.message_handler(Text(equals="Выключить оповещение о погоде"))
 async def OffNotification(message: types.Message):
@@ -67,5 +73,7 @@ async def get_weather(message: types.Message):
     except:
         await message.reply("Проверьте название города!")
 
+
 if __name__ == "__main__":
+    scheduler.start()  # Запускаем планировщик задач
     executor.start_polling(dp)
