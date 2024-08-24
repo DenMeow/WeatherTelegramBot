@@ -2,6 +2,7 @@ import datetime
 import requests
 import math
 from aiogram import Bot, Dispatcher, executor, types
+from aiogram.dispatcher.filters import Text
 
 bot = Bot(token='6615733860:AAHKJZNX9U6IbZaPsk24RZ2_YU_U1VSMxDo')
 dp = Dispatcher(bot)
@@ -14,6 +15,14 @@ async def start_command(message: types.Message):
     photo = open('hi.jpg', 'rb')
     await bot.send_photo(message.chat.id, photo)
     await message.answer(f"Привет, {message.from_user.first_name} \nНапиши мне название города и я пришлю сводку погоды🙂", reply_markup=keyboard)
+
+@dp.message_handler(Text(equals="Включить оповещение о погоде"))
+async def OnNotification(message: types.Message):
+
+
+@dp.message_handler(Text(equals="Выключить оповещение о погоде"))
+async def OffNotification(message: types.Message):
+
 
 @dp.message_handler()
 async def get_weather(message: types.Message):
@@ -57,7 +66,6 @@ async def get_weather(message: types.Message):
 
     except:
         await message.reply("Проверьте название города!")
-
 
 if __name__ == "__main__":
     executor.start_polling(dp)
