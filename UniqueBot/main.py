@@ -1,19 +1,33 @@
+MY_TOKEN = "6615733860:AAHKJZNX9U6IbZaPsk24RZ2_YU_U1VSMxDo"
+
 import datetime
 import requests
+import logging
+from database import init_db, add_user
 import math
 from aiogram import Bot, Dispatcher, executor, types
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters import Text
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 
-bot = Bot(token='6615733860:AAHKJZNX9U6IbZaPsk24RZ2_YU_U1VSMxDo')
-dp = Dispatcher(bot)
-scheduler = AsyncIOScheduler()
-user_notifications = {}
+
+logging.basicConfig(level=logging.INFO)
+
+bot = Bot(token=MY_TOKEN)
+dp = Dispatcher(bot, storage=MemoryStorage())
 
 
 @dp.message_handler(commands=["start"])
 async def start_command(message: types.Message):
+    user_id = message.from_user.id
+    username = message.from_user.username
+    first_name = message.from_user.first_name
+    last_name = message.from_user.last_name
+
+    # Сохраняем пользователя в БД
+    await add_user(user_id, username, first_name, last_name)
+
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     buttons = ["Включить оповещение о погоде", "Выключить оповещение о погоде"]
     keyboard.add(*buttons)
@@ -24,10 +38,6 @@ async def start_command(message: types.Message):
 @dp.message_handler(Text(equals="Включить оповещение о погоде"))
 async def OnNotification(message: types.Message):
     await message.reply("Введите время в формате HH:MM и название города (например, 14:30 Москва):")
-    user_notifications[message.chat.id] = None  # Инициализируем для этого пользователя
-
-@dp.message_handler(Text(equals="Выключить оповещение о погоде"))
-async def OffNotification(message: types.Message):
 
 
 @dp.message_handler()
@@ -74,6 +84,10 @@ async def get_weather(message: types.Message):
         await message.reply("Проверьте название города!")
 
 
-if __name__ == "__main__":
-    scheduler.start()  # Запускаем планировщик задач
-    executor.start_polling(dp)
+if __name__ == '__main__':
+    from asyncio import run
+
+    async def on_startup(dp):
+        await init_db()
+
+    run(executor.start_polling(dp, on_startup=on_startup))
