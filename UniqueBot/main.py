@@ -1,15 +1,15 @@
+from unittest.mock import call
+
 MY_TOKEN = "6615733860:AAHKJZNX9U6IbZaPsk24RZ2_YU_U1VSMxDo"
 
 import datetime
 import requests
 import logging
-from database import init_db, add_user
+from database import init_db, add_user, enable_notifications, disable_notifications
 import math
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters import Text
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-
 
 
 logging.basicConfig(level=logging.INFO)
@@ -38,7 +38,25 @@ async def start_command(message: types.Message):
 @dp.message_handler(Text(equals="Включить оповещение о погоде"))
 async def OnNotification(message: types.Message):
     await message.reply("Введите время в формате HH:MM и название города (например, 14:30 Москва):")
+    # Сохраняем user_id для дальнейшего использования
+    await dp.current_state(user=message.from_user.id).set_data({'user_id': message.from_user.id})
 
+@dp.message_handler(lambda message: len(message.text.split()) >= 2)
+async def handle_notification_input(message: types.Message):
+    user_data = await dp.current_state(user=message.from_user.id).get_data()
+    user_id = user_data.get('user_id')
+
+    try:
+        time_str, city = message.text.split(maxsplit=1)
+        # Проверяем корректность формата времени (HH:MM)
+        hour, minute = map(int, time_str.split(':'))
+        if 0 <= hour < 24 and 0 <= minute < 60:
+            await enable_notifications(user_id, city, time_str)
+            await message.reply(f"Оповещение о погоде включено для города {city} на {time_str}.")
+        else:
+            await message.reply("Пожалуйста, введите корректное время в формате HH:MM.")
+    except ValueError:
+        await message.reply("Пожалуйста, введите время в формате HH:MM и название города.")
 
 @dp.message_handler()
 async def get_weather(message: types.Message):
