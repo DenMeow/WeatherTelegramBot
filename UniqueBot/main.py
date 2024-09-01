@@ -40,13 +40,28 @@ async def OnNotification(message: types.Message):
     keyboard.add(*buttons)
 
     await message.reply("Введите время в формате HH:MM и название города (например, 14:30 Москва):", reply_markup=keyboard)
-    # Сохраняем user_id для дальнейшего использования
-    await dp.current_state(user=message.from_user.id).set_data({'user_id': message.from_user.id})
+
+    # Сохраняем user_id в состоянии
+    await dp.current_state(user=message.from_user.id).update_data(user_id=message.from_user.id)
+
+@dp.message_handler(lambda message: message.text and ':' in message.text)
+async def save_notification_time(message: types.Message):
+    user_data = await dp.current_state(user=message.from_user.id).get_data()
+    user_id = user_data.get('user_id')
+
+    if user_id:
+        try:
+            time, city = message.text.split(maxsplit=1)
+            await enable_notifications(user_id, city, time)
+            await message.reply(f"Оповещение о погоде включено на {time} для города {city}.")
+        except ValueError:
+            await message.reply("Неверный формат. Пожалуйста, введите время в формате HH:MM и название города.")
+    else:
+        await message.reply("Сначала активируйте оповещение.")
+
 
 @dp.message_handler(Text(equals="Выключить оповещение о погоде"))
 async def OFFNotification(message: types.Message):
-    await message.reply("Уведомления выключены!")
-
     user_data = await dp.current_state(user=message.from_user.id).get_data()
     user_id = user_data.get('user_id')
     await disable_notifications(user_id)
@@ -54,6 +69,9 @@ async def OFFNotification(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     buttons = ["Включить оповещение о погоде"]
     keyboard.add(*buttons)
+
+    await message.reply("Уведомления выключены!", reply_markup=keyboard)
+
 
 @dp.message_handler()
 async def get_weather(message: types.Message):
