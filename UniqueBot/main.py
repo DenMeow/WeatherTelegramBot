@@ -53,6 +53,8 @@ async def save_notification_time(message: types.Message):
         try:
             time, city = message.text.split(maxsplit=1)
             await enable_notifications(user_id, city, time)
+            photo = open('On.jpg', 'rb')
+            await bot.send_photo(message.chat.id, photo)
             await message.reply(f"Оповещение о погоде включено на {time} для города {city}.")
         except ValueError:
             await message.reply("Неверный формат. Пожалуйста, введите время в формате HH:MM и название города.")
