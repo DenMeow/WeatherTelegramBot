@@ -1,11 +1,15 @@
+import asyncio
+
 MY_TOKEN = "6615733860:AAHKJZNX9U6IbZaPsk24RZ2_YU_U1VSMxDo"
 
 import datetime
 import requests
+import schedule
 import logging
-from database import init_db, add_user, enable_notifications, disable_notifications
+from database import add_user, enable_notifications, disable_notifications
 import math
-from aiogram import Bot, Dispatcher, executor, types
+import time
+from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters import Text
 
@@ -44,6 +48,8 @@ async def OnNotification(message: types.Message):
     # Сохраняем user_id в состоянии
     await dp.current_state(user=message.from_user.id).update_data(user_id=message.from_user.id)
 
+
+
 @dp.message_handler(lambda message: message.text and ':' in message.text)
 async def save_notification_time(message: types.Message):
     user_data = await dp.current_state(user=message.from_user.id).get_data()
@@ -51,11 +57,13 @@ async def save_notification_time(message: types.Message):
 
     if user_id:
         try:
-            time, city = message.text.split(maxsplit=1)
-            await enable_notifications(user_id, city, time)
+            time_, city = message.text.split(maxsplit=1)
+            await enable_notifications(user_id, city, time_)
             photo = open('On.jpg', 'rb')
             await bot.send_photo(message.chat.id, photo)
-            await message.reply(f"Оповещение о погоде включено на {time} для города {city}.")
+            await message.reply(f"Оповещение о погоде включено на {time_} для города {city}.")
+
+
         except ValueError:
             await message.reply("Неверный формат. Пожалуйста, введите время в формате HH:MM и название города.")
     else:
@@ -118,11 +126,40 @@ async def get_weather(message: types.Message):
     except:
         await message.reply("Проверьте название города!")
 
+async def send_message():
+    print("Отправка сообщения пользователю %s...", 830637790)
+    await bot.send_message(830637790, "Привет! Это запланированное сообщение.")
+    print("Сообщение успешно отправлено!")
+
+
+async def schedule_task():
+    # Получаем текущее время
+    now = time.localtime()
+
+    # Определяем время запуска задачи
+    hour = 20
+    minute = 52
+
+    if now.tm_hour > hour or (now.tm_hour == hour and now.tm_min >= minute):
+        # Если текущее время больше 15:00, планируем задачу на завтра
+        tomorrow = time.time() + 24 * 60 * 60
+        tomorrow_time = time.localtime(tomorrow)
+
+        schedule_time = f"{tomorrow_time.tm_year}-{tomorrow_time.tm_mon}-{tomorrow_time.tm_mday} {hour}:{minute}"
+        print(f"Планирование задачи на {schedule_time}")
+        schedule.every().day.at(f"{hour:02d}:{minute:02d}").do(send_message)
+    else:
+        # Иначе планируем задачу на сегодня
+        today_time = f"{now.tm_year}-{now.tm_mon}-{now.tm_mday} {hour}:{minute}"
+        print(f"Планирование задачи на {today_time}")
+        schedule.every().day.at(f"{hour:02d}:{minute:02d}").do(send_message)
+
+
+
+# Основной блок программы
+async def main():
+    await schedule_task()
+    await dp.start_polling()
 
 if __name__ == '__main__':
-    from asyncio import run
-
-    async def on_startup(dp):
-        await init_db()
-
-    run(executor.start_polling(dp, on_startup=on_startup))
+    asyncio.run(main())
